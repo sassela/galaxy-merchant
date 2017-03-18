@@ -34,15 +34,15 @@
 (deftest parse-wares->value-test
   (testing "Given a valid string, returns a map representing the wares->value query"
     (are [input actual] (= actual (c/parse-wares->value input))
-                        "glob glob Silver is 34 Credits" {:units [:glob :glob]
-                                                          :metal [:silver]
-                                                          :value 34}
-                        "glob prok Gold is 57800 Credits " {:units [:glob :prok]
-                                                            :metal [:gold]
-                                                            :value 57800}
-                        "pish pish Iron is 3910 Credits" {:units [:pish :pish]
-                                                          :metal [:iron]
-                                                          :value 3910}
-                        "higgledeypop silver is 01 Credits" {:units [:higgledeypop]
-                                                             :metal [:lead]
-                                                             :value 1})))
+                        "glob glob silver is 34 credits" {:units  [:glob :glob]
+                                                          :metals [:silver]
+                                                          :value  34}
+                        "glob prok gold is 57800 credits " {:units  [:glob :prok]
+                                                            :metals [:gold]
+                                                            :value  57800}
+                        "pish pish iron is 3910 credits" {:units  [:pish :pish]
+                                                          :metals [:iron]
+                                                          :value  3910}
+                        "higgledeypop silver is 01 credits" {:units  [:higgledeypop]
+                                                             :metals [:silver]
+                                                             :value  1})))
