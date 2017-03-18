@@ -22,12 +22,26 @@
 (s/def ::roman-numeral
   (s/with-gen #(re-matches NUMERAL_REGEX %) #(gen/fmap str/join (gen/vector (s/gen ::numeral-chars) 1 10))))
 
+(defn string->keywords
+  "Given a string, returns a collection of keywords corresponding to characters"
+  [s]
+  (->> s str/upper-case (re-seq #"[\S]") (map keyword)))
 
 (s/fdef string->keywords
         :args (s/cat :input (s/and string? (complement str/blank?)))
         :return (s/coll-of keyword?)
         :fn #(= (count (-> % :args :input)) (count (:ret %))))
 
+(defn numeral->value
+  "Given a single roman numeral, returns its value"
+  [numeral]
+  (letfn [(running-val [prev val value]
+            (if (and prev (< prev val)) (+ (- value (* 2 prev)) val) (+ value val)))]
+    (loop [[head & tail] (string->keywords numeral) value 0 prev nil]
+    (if (nil? head)
+      value
+      (let [val (head SYMBOL_VALUES)]
+        (recur tail (running-val prev val value) val))))))
 
 (s/fdef numeral->value
         :args (s/cat :input ::roman-numeral)
