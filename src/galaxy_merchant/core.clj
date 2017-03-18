@@ -29,8 +29,10 @@
   [s]
   (->> s str/upper-case (re-seq #"[\S]") (map keyword)))
 
+(s/def ::nblank-str (s/and string? (complement str/blank?)))
+
 (s/fdef string->keywords
-        :args (s/cat :input (s/and string? (complement str/blank?)))
+        :args (s/cat :input ::nblank-str)
         :return (s/coll-of keyword?)
         :fn #(= (count (-> % :args :input)) (count (:ret %))))
 
@@ -53,4 +55,26 @@
 (def NUMERAL_VALUE_REG #"^\S+\sis\s\S+")
 (def METAL_VALUE_REG #"^\S+\s(silver|gold|iron)\sis\s\d+\scredit(s)?")
 (def CONVERT_NUMERAL_REG #"^(how much)\sis\s((a|b|c)\s)+\?") ; FIXME spaces here
-(def CONVERT_METAL_REG #"^(how many credits)\sis\s((a|b|c)\s)+(silver|gold|iron)\?")
+(def CONVERT_METAL_REG #"^(how many credits is)\s((a|b|c)\s)+(silver|gold|iron)\?")
+
+(def numeral-gen
+  #(gen/fmap (fn [[s1 s2]] (str s1 " is " s2))
+             (gen/tuple (s/gen ::nblank-str) (s/gen ::nblank-str))))
+
+(def metal-gen
+  #(gen/fmap (fn [[s1 s2 s3]] (str s1 " " s2 " is " s3 " credits"))
+             (gen/tuple (s/gen ::nblank-str) (s/gen #{"silver" "gold" "iron"}) (s/gen pos-int?))))
+
+(def convert-numeral-gen
+  #(gen/fmap (fn [s1] (str "how much is " s1 "?"))          ;FIXME STR
+             (s/gen ::nblank-str)))
+
+(def convert-metal-gen
+  #(gen/fmap (fn [[s1 s2]] (str "how many credits is " s1 " " s2))
+             (gen/tuple (s/gen ::nblank-str) (s/gen #{"silver" "gold" "iron"}))))
+
+(s/def ::user-input
+  (s/with-gen
+    string?
+    #(gen/fmap (fn [v] (nth v (rand-int 3)))
+               (gen/tuple (numeral-gen) (metal-gen) (convert-numeral-gen) (convert-metal-gen)))))
