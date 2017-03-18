@@ -63,7 +63,7 @@
 
 (def metal-gen
   #(gen/fmap (fn [[s1 s2 s3]] (str s1 " " s2 " is " s3 " credits"))
-             (gen/tuple (s/gen ::nblank-str) (s/gen #{"silver" "gold" "iron"}) (s/gen pos-int?))))
+             (gen/tuple (s/gen ::nblank-str) (s/gen #{"silver" "gold" "iron"}) (s/gen pos?))))
 
 (def convert-numeral-gen
   #(gen/fmap (fn [s1] (str "how much is " s1 "?"))
@@ -71,15 +71,32 @@
 
 (def convert-metal-gen
   #(gen/fmap (fn [[s1 s2]] (str "how many credits is " s1 " " s2 "?"))
-             (gen/tuple (s/gen ::nblank-str) (s/gen #{"silver" "gold" "iron"}))))
+             (gen/tuple (s/gen ::nblank-str) (s/gen #{"silver" "gold" "iron"})))) ;FIXME use map key names
 
 (s/def ::user-input
   (s/with-gen
     string?
     #(let [gens [(numeral-gen) (metal-gen) (convert-numeral-gen) (convert-metal-gen) (s/gen ::nblank-str)]]
        (gen/fmap (fn [v] (nth v (rand-int (count gens))))
-                 (apply gen/tuple gens)))))(s/fdef parse-input
+                 (apply gen/tuple gens)))))
+
+(s/def ::values
+  ;;FIXME hmmm
+  (s/and map? (s/cat :metal #(s/and map? (every? pos? (vals %)))
+                     :intergal-unit #(s/and map? (every? ::roman-numeral (vals %))))))
+
 
 (s/fdef parse-instruction
         :args (s/cat :input ::user-input)
         :ret fn?)
+
+(s/fdef parse-unit->numeral-value
+        :args (s/cat :input ::user-input)
+        :ret (s/cat :units (s/coll-of keyword?)
+                    :numeral-value ::roman-numeral))
+
+(s/fdef parse-wares->value
+        :args (s/cat :input ::user-input)
+        :ret (s/cat :units (s/coll-of keyword?)
+                    :metals (s/coll-of keyword?)
+                    :value pos?))
