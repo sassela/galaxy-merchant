@@ -10,7 +10,7 @@
   (println "Hello, World!"))
 
 ;; roman numerals
-(def ^:const NUMERAL_REGEX #"^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$")
+(def ^:const NUMERAL_REG #"^M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$")
 (def ^:const SYMBOL_VALUES {:M 1000, :V 5, :I 1, :L 50, :X 10, :C 100, :D 500})
 
 (s/def ::numeral-ks
@@ -20,7 +20,9 @@
   (->> SYMBOL_VALUES keys (map name) set))
 
 (s/def ::roman-numeral
-  (s/with-gen #(re-matches NUMERAL_REGEX %) #(gen/fmap str/join (gen/vector (s/gen ::numeral-chars) 1 10))))
+  (s/with-gen
+    #(re-matches NUMERAL_REG %)
+    #(gen/fmap str/join (gen/vector (s/gen ::numeral-chars) 1 10))))
 
 (defn string->keywords
   "Given a string, returns a collection of keywords corresponding to characters"
@@ -46,3 +48,9 @@
 (s/fdef numeral->value
         :args (s/cat :input ::roman-numeral)
         :ret int?)
+
+;; user input
+(def NUMERAL_VALUE_REG #"^\S+\sis\s\S+")
+(def METAL_VALUE_REG #"^\S+\s(silver|gold|iron)\sis\s\d+\scredit(s)?")
+(def CONVERT_NUMERAL_REG #"^(how much)\sis\s((a|b|c)\s)+\?") ; FIXME spaces here
+(def CONVERT_METAL_REG #"^(how many credits)\sis\s((a|b|c)\s)+(silver|gold|iron)\?")
