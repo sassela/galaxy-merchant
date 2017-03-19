@@ -46,3 +46,35 @@
                           "higgledeypop silver is 01 credits" {:units  [:higgledeypop]
                                                                :metals [:silver]
                                                                :value  1})))
+
+(->> (test/check `c/set-unit->numeral-value) test/summarize-results)
+(deftest set-unit->numeral-value-test
+  (testing "Updates a given map with the unit->value conversion"
+    (are [input expected] (= expected (c/set-unit->numeral-value {} input))
+                          {:units [:glob], :numeral-value "I"} {:glob 1}
+                          {:units [:prok], :numeral-value "V"} {:prok 5}
+                          {:units [:pish], :numeral-value "X"} {:pish 10}
+                          {:units [:tegj], :numeral-value "L"} {:tegj 50})))
+
+(->> (test/check `c/set-wares->value) test/summarize-results)
+(deftest parse-wares->value-test
+  (testing "Updates a given map with the metal unit->value conversion"
+    (let [db {::c/unit-vals {:glob 1
+                            :prok 5
+                            :pish 10
+                            :tegj 50}}]
+      (are [input expected] (= expected (c/set-wares->value db input))
+                            {:units  [:glob :glob]
+                             :metals [:silver]
+                             :value  34}
+                            (merge db {::c/metal-vals {:silver 17}})
+
+                            {:units  [:glob :prok]
+                             :metals [:gold]
+                             :value  57800}
+                            (merge db {::c/metal-vals {:gold 14450}})
+
+                            {:units  [:pish :pish]
+                             :metals [:iron]
+                             :value  3910}
+                            (merge db {::c/metal-vals {:iron 195.5}})))))

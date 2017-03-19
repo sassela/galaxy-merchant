@@ -21,7 +21,7 @@
 
 (s/def ::roman-numeral
   (s/with-gen
-    #(re-matches NUMERAL_REG %)
+    (s/and string? #(re-matches NUMERAL_REG %))
     #(gen/fmap str/join (gen/vector (s/gen ::numeral-chars) 1 10))))
 
 (defn string->keywords
@@ -47,9 +47,11 @@
       (let [val (head SYMBOL_VALUES)]
         (recur tail (running-val prev val value) val))))))
 
+(s/def ::value (s/and (s/or :int int? :double double?) pos?)) ;;TODO allow ratio?
+
 (s/fdef numeral->value
         :args (s/cat :input ::roman-numeral)
-        :ret int?)
+        :ret (s/and int? pos?))
 
 ;; user input
 (def NUMERAL_VALUE_REG #"^\S+\sis\s\S+")
@@ -64,7 +66,7 @@
 
 (def wares-gen
   #(gen/fmap (fn [[s1 s2 s3]] (str s1 " " s2 " is " s3 " credits"))
-             (gen/tuple (s/gen ::nblank-str) (s/gen metals) (s/gen pos-int?))))
+             (gen/tuple (s/gen ::nblank-str) (s/gen metals) (s/gen ::value))))
 
 (def convert-numeral-gen
   #(gen/fmap (fn [s1] (str "how much is " s1 "?"))
@@ -77,14 +79,14 @@
 (s/def ::user-input
   (s/with-gen
     string?
-    #(let [gens [(numeral-gen) (wares-gen) (convert-numeral-gen) (convert-metal-gen) (s/gen ::nblank-str)]]
-       (gen/fmap (fn [v] (nth v (rand-int (count gens))))
+    #(let [gens [(numeral-gen)
+                 (wares-gen)
+                 (convert-numeral-gen)
+                 (convert-metal-gen) 
+                 (s/gen ::nblank-str)]]
+       (gen/fmap (fn [coll] (nth coll (rand-int (count gens))))
                  (apply gen/tuple gens)))))
 
-(s/def ::values
-  ;;FIXME hmmm
-  (s/and map? (s/cat :metal #(s/and map? (every? pos-int? (vals %)))
-                     :intergal-unit #(s/and map? (every? ::roman-numeral (vals %))))))
 
 
 (s/fdef parse-instruction
@@ -99,7 +101,6 @@
 (s/def ::units (s/coll-of keyword?))
 (s/def ::numeral-value ::roman-numeral)
 (s/def ::metals (s/coll-of (->> metals (map keyword) set)))
-(s/def ::value pos-int?)
 
 (defn parse-unit->numeral-value
   [input]
@@ -121,3 +122,22 @@
 (s/fdef parse-wares->value
         :args (s/cat :input (s/with-gen ::nblank-str wares-gen))
         :ret (s/keys :req-un [::units ::metals ::value]))
+
+;; conversion
+
+(s/def ::metal-vals (s/and map? (fn [m] (every? #(s/valid? ::value %) (vals m)))))
+(s/def ::unit-vals (s/and map? (fn [m] (every? #(s/valid? ::roman-numeral %) (vals m)))))
+
+(s/def ::conversion-values
+  (s/keys :opt [::metal-vals ::unit-vals]))
+
+(s/fdef set-unit->numeral-value
+        :args (s/cat :units (s/keys :req-un [::units ::numeral-value])
+                     :conversion-values ::conversion-values)
+        :ret ::conversion-values)
+
+(s/fdef set-wares->value
+        :args (s/cat :wares (s/keys :req-un [::metals ::value]
+                                    :opt-un [::units])
+                     :conversion-values ::conversion-values)
+        :ret ::conversion-values)
