@@ -47,7 +47,9 @@
       (let [val (head SYMBOL_VALUES)]
         (recur tail (running-val prev val value) val))))))
 
-(s/def ::value (s/and (s/or :int int? :double double?) pos?)) ;;TODO allow ratio?
+(s/def ::value (s/or :int? pos-int?
+                     :double? (s/double-in :infinite? false :Nan? false :min 0)
+                     :ratio (s/and ratio? pos?)))           ;;TODO tidy up. (s/and pos?) does weird things
 
 (s/fdef numeral->value
         :args (s/cat :input ::roman-numeral)
@@ -98,9 +100,13 @@
   [coll fn]
   (map fn coll))
 
-(s/def ::units (s/coll-of keyword?))
+(s/def ::unit (s/and keyword? #(s/valid? ::nblank-str (name %))))
+(s/def ::units (s/coll-of ::unit :min-count 1))
 (s/def ::numeral-value ::roman-numeral)
-(s/def ::metals (s/coll-of (->> metals (map keyword) set)))
+(s/def ::metals (s/coll-of
+                  (->> metals (map keyword) set)
+                  :distinct true
+                  :min-count 1))
 
 (defn parse-unit->numeral-value
   [input]
@@ -125,19 +131,20 @@
 
 ;; conversion
 
-(s/def ::metal-vals (s/and map? (fn [m] (every? #(s/valid? ::value %) (vals m)))))
+(s/def ::metal-vals (s/and map? (fn [m] (every? #(s/valid? ::value %) (vals m))))) ;;FIXME coll-of?
 (s/def ::unit-vals (s/and map? (fn [m] (every? #(s/valid? ::roman-numeral %) (vals m)))))
 
 (s/def ::conversion-values
   (s/keys :opt [::metal-vals ::unit-vals]))
 
 (s/fdef set-unit->numeral-value
-        :args (s/cat :units (s/keys :req-un [::units ::numeral-value])
-                     :conversion-values ::conversion-values)
+        :args (s/cat :conversion-values ::conversion-values
+                     :units (s/keys :req-un [::unit ::numeral-value]))
         :ret ::conversion-values)
 
 (s/fdef set-wares->value
-        :args (s/cat :wares (s/keys :req-un [::metals ::value]
-                                    :opt-un [::units])
-                     :conversion-values ::conversion-values)
-        :ret ::conversion-values)
+        :args (s/cat :conversion-values ::conversion-values
+                     :wares (s/keys :req-un [::metals ::value]
+                                    :opt-un [::units]))
+        :ret ::conversion-values
+        :fn #(= (keys (:conversion-values %)) ::units))

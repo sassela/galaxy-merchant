@@ -51,10 +51,10 @@
 (deftest set-unit->numeral-value-test
   (testing "Updates a given map with the unit->value conversion"
     (are [input expected] (= expected (c/set-unit->numeral-value {} input))
-                          {:units [:glob], :numeral-value "I"} {:glob 1}
-                          {:units [:prok], :numeral-value "V"} {:prok 5}
-                          {:units [:pish], :numeral-value "X"} {:pish 10}
-                          {:units [:tegj], :numeral-value "L"} {:tegj 50})))
+                          {:units [:glob], :numeral-value "I"} {:unit-vals {:glob "I"}}
+                          {:units [:prok], :numeral-value "V"} {:unit-vals {:prok "V"}}
+                          {:units [:pish], :numeral-value "X"} {:unit-vals {:pish "X"}}
+                          {:units [:tegj], :numeral-value "L"} {:unit-vals {:tegj "L"}})))
 
 (->> (test/check `c/set-wares->value) test/summarize-results)
 (deftest parse-wares->value-test
