@@ -78,3 +78,6 @@
                              :metals :iron
                              :value  3910}
                             (merge db {::c/metal-vals {:iron 195.5}})))))
+
+;(->> (test/check `c/unit->numeral-value) test/summarize-results)
+;(->> (test/check `c/wares->credits) test/summarize-results)

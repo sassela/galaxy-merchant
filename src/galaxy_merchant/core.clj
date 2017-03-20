@@ -89,7 +89,22 @@
        (gen/fmap (fn [coll] (nth coll (rand-int (count gens))))
                  (apply gen/tuple gens)))))
 
+;;parse input, update map
+;;if undefined, 3a get
+;;if no key, add
+;;no dupe vals either
 
+(defn parse-instruction
+  [input]
+  ;;TODO provide fn map?
+  (let [res (condp re-matches (-> input str/trim str/lower-case)
+              NUMERAL_VALUE_REG #(prn {:a "intergal"})
+              METAL_VALUE_REG #(prn {:metals :b})
+              CONVERT_NUMERAL_REG #(prn {:q "nums"})
+              CONVERT_METAL_REG #(prn {:q "metal"})
+              #(prn {:a "I have no idea what you're talking about"}))]
+    (prn "input " input " res: " res)
+    res))
 
 (s/fdef parse-instruction
         :args (s/cat :input ::user-input)
@@ -144,9 +159,29 @@
         :fn #(assoc-in %
                        [:ret :unit-vals (-> % :args :input ::unit)]
                        (-> % :args :input ::numeral-value)))
+
+(defn units->value
+  [db units]
+  (if (empty? units)
+    1
+    (->> units (map #(get-in db [:unit-vals %])) str/join numeral->value)))
+
+(defn set-wares->value
+  [db {:keys [metal units value] :as values}]
+  (let [divisor (units->value db units)]
+    (assoc-in db [:metal-vals metal] (/ value divisor))))
+
 (s/fdef set-wares->value
         :args (s/cat :conversion-values ::conversion-values
-                     :wares (s/keys :req-un [::metals ::value]
+                     :wares (s/keys :req-un [::metal ::value]
                                     :opt-un [::units]))
         :ret ::conversion-values
-        :fn #(= (keys (:conversion-values %)) ::units))
+        :fn #(contains? (keys (::conversion-values (:ret %))) (->> % :args :wares ::metal)))
+
+(s/fdef unit->numeral-value
+        :args (s/cat :units (s/coll-of keyword?))
+        :ret ::roman-numeral)
+
+(s/fdef wares->credits
+        :args (s/cat :input ::user-input :values ::values)
+        :ret pos-int?)
