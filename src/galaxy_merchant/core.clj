@@ -33,7 +33,7 @@
 
 (s/fdef string->keywords
         :args (s/cat :input ::nblank-str)
-        :return (s/coll-of keyword?)
+        :return (s/+ keyword?)
         :fn #(= (count (-> % :args :input)) (count (:ret %))))
 
 (defn numeral->value
@@ -47,8 +47,8 @@
       (let [val (head SYMBOL_VALUES)]
         (recur tail (running-val prev val value) val))))))
 
-(s/def ::value (s/or :int? pos-int?
-                     :double? (s/double-in :infinite? false :Nan? false :min 0)
+(s/def ::value (s/or :int? (s/and int? pos?)
+                     :double? (s/double-in :infinite? false :Nan? false :min 1)
                      :ratio (s/and ratio? pos?)))           ;;TODO tidy up. (s/and pos?) does weird things
 
 (s/fdef numeral->value
@@ -101,12 +101,10 @@
   (map fn coll))
 
 (s/def ::unit (s/and keyword? #(s/valid? ::nblank-str (name %))))
-(s/def ::units (s/coll-of ::unit :min-count 1))
+(s/def ::units (s/+ ::unit))
 (s/def ::numeral-value ::roman-numeral)
-(s/def ::metals (s/coll-of
-                  (->> metals (map keyword) set)
-                  :distinct true
-                  :min-count 1))
+(s/def ::metal (->> metals (map keyword) set))
+(s/def ::metals (s/coll-of ::metal :distinct true :min-count 1))
 
 (defn parse-unit->numeral-value
   [input]
@@ -131,17 +129,21 @@
 
 ;; conversion
 
-(s/def ::metal-vals (s/and map? (fn [m] (every? #(s/valid? ::value %) (vals m))))) ;;FIXME coll-of?
-(s/def ::unit-vals (s/and map? (fn [m] (every? #(s/valid? ::roman-numeral %) (vals m)))))
+(s/def ::metal-vals (s/map-of ::metal ::value :min-count 1))
+(s/def ::unit-vals (s/map-of keyword? ::roman-numeral :min-count 1))
+(s/def ::conversion-values (s/keys :req-un [::metal-vals ::unit-vals]))
 
-(s/def ::conversion-values
-  (s/keys :opt [::metal-vals ::unit-vals]))
+(defn set-unit->numeral-value
+  [db {:keys [unit numeral-value] :as unit-vals}]
+  (assoc-in db [:unit-vals unit] numeral-value))
 
 (s/fdef set-unit->numeral-value
         :args (s/cat :conversion-values ::conversion-values
-                     :units (s/keys :req-un [::unit ::numeral-value]))
-        :ret ::conversion-values)
-
+                     :input (s/keys :req-un [::unit ::numeral-value]))
+        :ret ::conversion-values
+        :fn #(assoc-in %
+                       [:ret :unit-vals (-> % :args :input ::unit)]
+                       (-> % :args :input ::numeral-value)))
 (s/fdef set-wares->value
         :args (s/cat :conversion-values ::conversion-values
                      :wares (s/keys :req-un [::metals ::value]

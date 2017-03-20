@@ -51,30 +51,30 @@
 (deftest set-unit->numeral-value-test
   (testing "Updates a given map with the unit->value conversion"
     (are [input expected] (= expected (c/set-unit->numeral-value {} input))
-                          {:units [:glob], :numeral-value "I"} {:unit-vals {:glob "I"}}
-                          {:units [:prok], :numeral-value "V"} {:unit-vals {:prok "V"}}
-                          {:units [:pish], :numeral-value "X"} {:unit-vals {:pish "X"}}
-                          {:units [:tegj], :numeral-value "L"} {:unit-vals {:tegj "L"}})))
+                          {:unit :glob, :numeral-value "I"} {:unit-vals {:glob "I"}}
+                          {:unit :prok, :numeral-value "V"} {:unit-vals {:prok "V"}}
+                          {:unit :pish, :numeral-value "X"} {:unit-vals {:pish "X"}}
+                          {:unit :tegj, :numeral-value "L"} {:unit-vals {:tegj "L"}})))
 
 (->> (test/check `c/set-wares->value) test/summarize-results)
 (deftest parse-wares->value-test
   (testing "Updates a given map with the metal unit->value conversion"
-    (let [db {::c/unit-vals {:glob 1
-                            :prok 5
-                            :pish 10
-                            :tegj 50}}]
+    (let [db {:unit-vals {:glob "I"
+                          :prok "V"
+                          :pish "X"
+                          :tegj "L"}}]
       (are [input expected] (= expected (c/set-wares->value db input))
                             {:units  [:glob :glob]
-                             :metals [:silver]
+                             :metals :silver
                              :value  34}
                             (merge db {::c/metal-vals {:silver 17}})
 
                             {:units  [:glob :prok]
-                             :metals [:gold]
+                             :metals :gold
                              :value  57800}
                             (merge db {::c/metal-vals {:gold 14450}})
 
                             {:units  [:pish :pish]
-                             :metals [:iron]
+                             :metals :iron
                              :value  3910}
                             (merge db {::c/metal-vals {:iron 195.5}})))))
