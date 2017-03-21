@@ -47,37 +47,72 @@
                                                                :metals [:silver]
                                                                :value  1})))
 
-(->> (test/check `c/set-unit->numeral-value) test/summarize-results)
+(comment
+  ; these generated tests take a while to run
+  (->> (test/check `c/set-unit->numeral-value) test/summarize-results))
 (deftest set-unit->numeral-value-test
-  (testing "Updates a given map with the unit->value conversion"
+  (testing "Updates a given map with the unit->numeral conversion"
     (are [input expected] (= expected (c/set-unit->numeral-value {} input))
                           {:unit :glob, :numeral-value "I"} {:unit-vals {:glob "I"}}
                           {:unit :prok, :numeral-value "V"} {:unit-vals {:prok "V"}}
                           {:unit :pish, :numeral-value "X"} {:unit-vals {:pish "X"}}
                           {:unit :tegj, :numeral-value "L"} {:unit-vals {:tegj "L"}})))
 
-(->> (test/check `c/set-wares->value) test/summarize-results)
-(deftest parse-wares->value-test
-  (testing "Updates a given map with the metal unit->value conversion"
+(comment
+  ; these generated tests take a while to run
+  (->> (test/check `c/set-wares->value) test/summarize-results))
+(deftest set-wares->value-test
+  (testing "Updates a given map with the metal->value conversion"
     (let [db {:unit-vals {:glob "I"
                           :prok "V"
                           :pish "X"
                           :tegj "L"}}]
       (are [input expected] (= expected (c/set-wares->value db input))
-                            {:units  [:glob :glob]
-                             :metals :silver
-                             :value  34}
-                            (merge db {::c/metal-vals {:silver 17}})
+                            {:units [:glob :glob]
+                             :metal :silver
+                             :value 34}
+                            (merge db {:metal-vals {:silver 17}})
 
-                            {:units  [:glob :prok]
-                             :metals :gold
-                             :value  57800}
-                            (merge db {::c/metal-vals {:gold 14450}})
+                            {:units [:glob :prok]
+                             :metal :gold
+                             :value 57800}
+                            (merge db {:metal-vals {:gold 14450}})
 
-                            {:units  [:pish :pish]
-                             :metals :iron
-                             :value  3910}
-                            (merge db {::c/metal-vals {:iron 195.5}})))))
+                            {:units [:pish :pish]
+                             :metal :iron
+                             :value 3910}
+                            (merge db {:metal-vals {:iron 391/2}})
 
-;(->> (test/check `c/unit->numeral-value) test/summarize-results)
-;(->> (test/check `c/wares->credits) test/summarize-results)
+                            {:units [:non :existent]
+                             :metal :iron
+                             :value 10}
+                            db))))
+
+(->> (test/check `c/wares->value) test/summarize-results)
+(deftest wares->value-test
+  (testing "Updates a given map with the metal unit->value conversion"
+    (let [db {:unit-vals  {:glob "I"
+                           :prok "V"
+                           :pish "X"
+                           :tegj "L"}
+              :metal-vals {:iron   391/2
+                           :gold   14450
+                           :silver 17}}]
+      (are [input expected] (= expected (c/wares->value db input))
+                            {:units [:pish :tegj :glob :glob]}
+                            42
+
+                            {:units [:glob :prok]
+                             :metal :silver}
+                            68
+
+                            {:units [:glob :prok]
+                             :metal :gold}
+                            57800
+
+                            {:units [:glob :prok]
+                             :metal :iron}
+                            782
+
+                            {:units [:non :existent]}
+                            nil))))

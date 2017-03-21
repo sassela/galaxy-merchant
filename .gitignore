@@ -9,3 +9,9 @@ pom.xml.asc
 /.nrepl-port
 .hgignore
 .hg/
+galaxy-merchant.iml
+.idea/replstate.xml
+.idea/libraries/Leiningen__clojure_complete_0_2_4.xml
+.idea/libraries/Leiningen__org_clojure_clojure_1_9_0_alpha14.xml
+.idea/libraries/Leiningen__org_clojure_test_check_0_9_0.xml
+.idea/libraries/Leiningen__org_clojure_tools_nrepl_0_2_12.xml

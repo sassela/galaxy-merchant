@@ -1,6 +1,7 @@
 (ns galaxy-merchant.core
   (:gen-class)
-  (:require [clojure.spec :as s]
+  (:require [clojure.set :as set]
+            [clojure.spec :as s]
             [clojure.spec.gen :as gen]
             [clojure.string :as str]))
 
@@ -164,24 +165,51 @@
   [db units]
   (if (empty? units)
     1
-    (->> units (map #(get-in db [:unit-vals %])) str/join numeral->value)))
+    (->> units (map #(get-in db [:unit-vals %] "")) str/join numeral->value)))
+
+;;FIXME fn spec gen if time
+;(s/and
+;  (s/cat :conversion-values ::conversion-values
+;    :units (s/coll-of keyword?))
+;  #(set/subset? (-> % :units set) (-> % :conversion-values :unit-vals :keys)))
+
+(s/fdef units->value
+  :args (s/cat :conversion-values ::conversion-values
+          :units (s/coll-of keyword?))
+  :ret ::value)
 
 (defn set-wares->value
   [db {:keys [metal units value] :as values}]
-  (let [divisor (units->value db units)]
-    (assoc-in db [:metal-vals metal] (/ value divisor))))
+  (if (set/subset? (set units) (->> db :unit-vals keys set))
+    (let [divisor (units->value db units)]
+      (assoc-in db [:metal-vals metal] (/ value divisor)))
+    (do
+      (prn "ERROR: conversion units do not exist. Please set them first.")
+      db)))
+
+;;FIXME :fn spec gen if time
+;(defn wares-convertable?
+;  [args]
+;  (set/subset? (->> args :wares :units set) (->> args :conversion-values :unit-vals keys set)))
+;
+;(defn wares-converted?
+;  [fn-vals]
+;  (contains? (->> fn-vals :ret :metal-vals keys set) (->> fn-vals :args :wares :metal)))
+
+;(s/def ::wares->value-args
+;  (s/with-gen
+;    (s/cat :conversion-values ::conversion-values
+;      :wares (s/keys :req-un [::units ::metal ::value]))
+;    (gen/fmap (s/gen ::unit-vals))))
 
 (s/fdef set-wares->value
-        :args (s/cat :conversion-values ::conversion-values
-                     :wares (s/keys :req-un [::metal ::value]
-                                    :opt-un [::units]))
-        :ret ::conversion-values
-        :fn #(contains? (keys (::conversion-values (:ret %))) (->> % :args :wares ::metal)))
+  :args (s/cat :conversion-values ::conversion-values
+          :wares (s/keys :req-un [::metal ::value]
+                   :opt-un [::units]))
+  :ret ::conversion-values)
 
-(s/fdef unit->numeral-value
-        :args (s/cat :units (s/coll-of keyword?))
-        :ret ::roman-numeral)
-
-(s/fdef wares->credits
-        :args (s/cat :input ::user-input :values ::values)
-        :ret pos-int?)
+(s/fdef wares->value
+  :args (s/cat :conversion-values ::conversion-values
+          :wares (s/keys :req-un [::metal ::value]
+                   :opt-un [::units]))
+  :ret (s/nilable ::value))
