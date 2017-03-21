@@ -47,9 +47,10 @@
                                                                :metals [:silver]
                                                                :value  1})))
 
-(comment
-  ; these generated tests take a while to run
-  (->> (test/check `c/set-unit->numeral-value) test/summarize-results))
+; these generated tests take a while to run 1000, limiting to 100
+(-> `c/set-unit->numeral-value
+  (test/check {:clojure.spec.test.check/opts {:num-tests 100}})
+  test/summarize-results)
 (deftest set-unit->numeral-value-test
   (testing "Updates a given map with the unit->numeral conversion"
     (are [input expected] (= expected (c/set-unit->numeral-value {} input))
@@ -58,9 +59,10 @@
                           {:unit :pish, :numeral-value "X"} {:unit-vals {:pish "X"}}
                           {:unit :tegj, :numeral-value "L"} {:unit-vals {:tegj "L"}})))
 
-(comment
-  ; these generated tests take a while to run
-  (->> (test/check `c/set-wares->value) test/summarize-results))
+(-> `c/set-wares->value
+  (test/check {:clojure.spec.test.check/opts {:num-tests 100}})
+  test/summarize-results)
+
 (deftest set-wares->value-test
   (testing "Updates a given map with the metal->value conversion"
     (let [db {:unit-vals {:glob "I"
@@ -88,7 +90,9 @@
                              :value 10}
                             db))))
 
-(->> (test/check `c/wares->value) test/summarize-results)
+(-> `c/wares->value
+  (test/check {:clojure.spec.test.check/opts {:num-tests 100}})
+  test/summarize-results)
 (deftest wares->value-test
   (testing "Updates a given map with the metal unit->value conversion"
     (let [db {:unit-vals  {:glob "I"
@@ -99,20 +103,12 @@
                            :gold   14450
                            :silver 17}}]
       (are [input expected] (= expected (c/wares->value db input))
-                            {:units [:pish :tegj :glob :glob]}
-                            42
+                            {:units [:pish :tegj :glob :glob]} 42
 
-                            {:units [:glob :prok]
-                             :metal :silver}
-                            68
+                            {:units [:glob :prok], :metal :silver} 68
 
-                            {:units [:glob :prok]
-                             :metal :gold}
-                            57800
+                            {:units [:glob :prok], :metal :gold} 57800
 
-                            {:units [:glob :prok]
-                             :metal :iron}
-                            782
+                            {:units [:glob :prok], :metal :iron} 782
 
-                            {:units [:non :existent]}
-                            nil))))
+                            {:units [:non :existent]} nil))))

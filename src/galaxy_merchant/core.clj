@@ -173,19 +173,27 @@
 ;    :units (s/coll-of keyword?))
 ;  #(set/subset? (-> % :units set) (-> % :conversion-values :unit-vals :keys)))
 
-(s/fdef units->value
+(s/fdef unit-value
   :args (s/cat :conversion-values ::conversion-values
           :units (s/coll-of keyword?))
   :ret ::value)
 
+(defn invalid-units
+  [db {:keys [metal units value] :as values}]
+  (let [valid-units (-> db :unit-vals keys set)
+        input-units (set units)
+        units-valid? (set/subset? input-units valid-units)]
+    (when-not units-valid?
+      (into [] (set/difference input-units valid-units)))))
+
 (defn set-wares->value
   [db {:keys [metal units value] :as values}]
-  (if (set/subset? (set units) (->> db :unit-vals keys set))
-    (let [divisor (units->value db units)]
-      (assoc-in db [:metal-vals metal] (/ value divisor)))
+  (if-let [invalid (invalid-units db values)]
     (do
-      (prn "ERROR: conversion units do not exist. Please set them first.")
-      db)))
+      (println "ERROR: conversion units" invalid "do not exist. Please set them first.")
+      db)
+    (let [divisor (unit-value db units)]
+      (assoc-in db [:metal-vals metal] (/ value divisor)))))
 
 ;;FIXME :fn spec gen if time
 ;(defn wares-convertable?
@@ -207,6 +215,18 @@
           :wares (s/keys :req-un [::metal ::value]
                    :opt-un [::units]))
   :ret ::conversion-values)
+
+(defn metal-value
+  [db metal]
+  (get-in db [:metal-vals metal] 1))
+
+(defn wares->value
+  [db {:keys [metal units value] :as values}]
+  (if-let [invalid (invalid-units db values)]
+    (println "ERROR: conversion units" invalid "do not exist. Please set them first.")
+    (let [unit-multiplier  (unit-value db units)
+              metal-multiplier (metal-value db metal)]
+          (* metal-multiplier unit-multiplier))))
 
 (s/fdef wares->value
   :args (s/cat :conversion-values ::conversion-values
