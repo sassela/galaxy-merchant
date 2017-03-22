@@ -25,27 +25,27 @@
 (deftest parse-unit->numeral-value-test
   (testing "Given a valid string, returns a map representing the unit->numeral-value query"
     (are [input expected] (= expected (c/parse-unit->numeral-value input))
-                          "glob is I" {:units [:glob], :numeral-value "I"}
-                          "prok  is V" {:units [:prok], :numeral-value "V"}
-                          "pish is X " {:units [:pish], :numeral-value "X"}
-                          " tegj is L" {:units [:tegj], :numeral-value "L"})))
+                          "glob is I" {:unit :glob, :numeral-value "I"}
+                          "prok  is V" {:unit :prok, :numeral-value "V"}
+                          "pish is X " {:unit :pish, :numeral-value "X"}
+                          " tegj is L" {:unit :tegj, :numeral-value "L"})))
 
 (->> (test/check `c/parse-wares->value) test/summarize-results)
 (deftest parse-wares->value-test
   (testing "Given a valid string, returns a map representing the wares->value query"
     (are [input expected] (= expected (c/parse-wares->value input))
-                          "glob glob silver is 34 credits" {:units  [:glob :glob]
-                                                            :metals [:silver]
-                                                            :value  34}
-                          "glob prok gold is 57800 credits " {:units  [:glob :prok]
-                                                              :metals [:gold]
-                                                              :value  57800}
-                          "pish pish iron is 3910 credits" {:units  [:pish :pish]
-                                                            :metals [:iron]
-                                                            :value  3910}
-                          "higgledeypop silver is 01 credits" {:units  [:higgledeypop]
-                                                               :metals [:silver]
-                                                               :value  1})))
+                          "glob glob silver is 34 credits" {:units [:glob :glob]
+                                                            :metal :silver
+                                                            :value 34}
+                          "glob prok gold is 57800 credits " {:units [:glob :prok]
+                                                              :metal :gold
+                                                              :value 57800}
+                          "pish pish iron is 3910 credits" {:units [:pish :pish]
+                                                            :metal :iron
+                                                            :value 3910}
+                          "higgledeypop silver is 01 credits" {:units [:higgledeypop]
+                                                               :metal :silver
+                                                               :value 1})))
 
 ; these generated tests take a while to run 1000, limiting to 100
 (-> `c/set-unit->numeral-value
